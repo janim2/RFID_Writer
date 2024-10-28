@@ -16,6 +16,7 @@ class _RFIDMainScreenState extends State<RFIDMainScreen> {
   String _status = 'Disconnected';
   String _readData = '';
   TextEditingController _writeController = TextEditingController();
+  StreamSubscription? _tagSubscription;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +33,11 @@ class _RFIDMainScreenState extends State<RFIDMainScreen> {
               ElevatedButton(
                 onPressed: _connect,
                 child: Text('Connect'),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _connectReader,
+                child: Text('Connect Reader'),
               ),
               SizedBox(height: 20),
               ElevatedButton(
@@ -84,6 +90,49 @@ class _RFIDMainScreenState extends State<RFIDMainScreen> {
     }
   }
 
+  // Future<void> _connectReader() async {
+  //   setState(() => _status = 'Connecting...');
+  //   try {
+  //     await Future.delayed(Duration(seconds: 2)); // Add a delay
+  //     await _rfidService.connectToReader();
+  //     setState(() => _status = 'Connected');
+  //   } on PlatformException catch (e) {
+  //     developer.log('RFID connection error', error: e, name: 'RFIDMainScreen');
+  //     setState(
+  //         () => _status = 'Connection failed: ${e.message}. Code: ${e.code}');
+  //   } catch (e) {
+  //     developer.log('Unexpected error during RFID connection',
+  //         error: e, name: 'RFIDMainScreen');
+  //     setState(() => _status = 'Connection failed: $e');
+  //   }
+  // }
+
+  Future<void> _connectReader() async {
+    setState(() => _status = 'Connecting...');
+    try {
+      // Connect to the reader
+      await _rfidService.connectToReader();
+
+      // Listen to the RFID data stream
+      _rfidService.dataStream?.listen((tagData) {
+        setState(() {
+          _status = 'Tag Read: $tagData';
+          // You might want to play a sound or show a visual indicator here
+        });
+
+        // Log the tag read
+        developer.log('RFID Tag Read: $tagData', name: 'RFIDMainScreen');
+      }, onError: (error) {
+        setState(() => _status = 'Error reading tag: $error');
+        developer.log('RFID Read Error', error: error, name: 'RFIDMainScreen');
+      });
+
+      setState(() => _status = 'Connected - Ready to read tags');
+    } catch (e) {
+      print('Error starting RFID reader: $e');
+    }
+  }
+
   Future<void> _read() async {
     try {
       final data = await _rfidService.readData();
@@ -131,6 +180,7 @@ class _RFIDMainScreenState extends State<RFIDMainScreen> {
 
   @override
   void dispose() {
+    _tagSubscription?.cancel();
     _rfidService.disconnect();
     _writeController.dispose();
     super.dispose();
