@@ -22,7 +22,7 @@ class _RFIDMainScreenState extends State<RFIDMainScreen> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: Text('RFID Writer')),
+        appBar: AppBar(title: Text('RFID Writer & Reader')),
         body: Padding(
           padding: EdgeInsets.all(16.0),
           child: Column(
